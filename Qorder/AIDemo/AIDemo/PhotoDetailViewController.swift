@@ -173,39 +173,65 @@ class FavoriteManager {
     private let userDefaults = UserDefaults.standard
     private let favoritesKey = "FavoritePhotos"
     
-    private init() {}
+    // Cache favorites in memory to avoid repeated UserDefaults access
+    private var cachedFavorites: [Photo]?
+    private let cacheQueue = DispatchQueue(label: "FavoriteCacheQueue", attributes: .concurrent)
+    
+    private init() {
+        // Preload favorites on init
+        loadFavoritesFromDefaults()
+    }
     
     func addFavorite(photo: Photo) {
-        var favorites = getFavorites()
-        
-        // Check if already exists
-        if !favorites.contains(where: { $0.id == photo.id }) {
-            favorites.append(photo)
-            saveFavorites(favorites)
+        cacheQueue.async(flags: .barrier) {
+            var favorites = self.cachedFavorites ?? []
+            
+            // Check if already exists
+            if !favorites.contains(where: { $0.id == photo.id }) {
+                favorites.append(photo)
+                self.cachedFavorites = favorites
+                self.saveFavoritesToDefaults(favorites)
+            }
         }
     }
     
     func removeFavorite(photoId: Int) {
-        var favorites = getFavorites()
-        favorites.removeAll { $0.id == photoId }
-        saveFavorites(favorites)
+        cacheQueue.async(flags: .barrier) {
+            var favorites = self.cachedFavorites ?? []
+            favorites.removeAll { $0.id == photoId }
+            self.cachedFavorites = favorites
+            self.saveFavoritesToDefaults(favorites)
+        }
     }
     
     func isFavorited(photoId: Int) -> Bool {
-        let favorites = getFavorites()
-        return favorites.contains { $0.id == photoId }
+        return cacheQueue.sync {
+            return cachedFavorites?.contains { $0.id == photoId } ?? false
+        }
     }
     
     func getFavorites() -> [Photo] {
-        guard let data = userDefaults.data(forKey: favoritesKey),
-              let favorites = try? JSONDecoder().decode([Photo].self, from: data) else {
-            return []
+        return cacheQueue.sync {
+            return cachedFavorites ?? []
         }
-        return favorites
     }
     
-    private func saveFavorites(_ favorites: [Photo]) {
-        guard let data = try? JSONEncoder().encode(favorites) else { return }
-        userDefaults.set(data, forKey: favoritesKey)
+    private func loadFavoritesFromDefaults() {
+        cacheQueue.async(flags: .barrier) {
+            guard let data = self.userDefaults.data(forKey: self.favoritesKey),
+                  let favorites = try? JSONDecoder().decode([Photo].self, from: data) else {
+                self.cachedFavorites = []
+                return
+            }
+            self.cachedFavorites = favorites
+        }
+    }
+    
+    private func saveFavoritesToDefaults(_ favorites: [Photo]) {
+        // Save on background queue to avoid blocking UI
+        DispatchQueue.global(qos: .utility).async {
+            guard let data = try? JSONEncoder().encode(favorites) else { return }
+            self.userDefaults.set(data, forKey: self.favoritesKey)
+        }
     }
 }

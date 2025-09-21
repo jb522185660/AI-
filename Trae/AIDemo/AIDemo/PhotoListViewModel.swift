@@ -28,23 +28,39 @@ final class PhotoListViewModel: ObservableObject {
     }
     
     func loadImage(from urlString: String) async -> UIImage? {
+        // Check cache first
         if let cachedImage = ImageCache.shared.image(forKey: urlString) {
             return cachedImage
         }
         
-        guard let url = URL(string: urlString) else { return nil }
+        // Validate URL
+        guard let url = URL(string: urlString), url.scheme != nil else {
+            return nil
+        }
         
+        // Load image with timeout and error handling
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, response) = try await URLSession.shared.data(from: url)
+            
+            // Validate HTTP response
+            if let httpResponse = response as? HTTPURLResponse, 
+               !(200...299).contains(httpResponse.statusCode) {
+                print("HTTP error: \(httpResponse.statusCode)")
+                return nil
+            }
+            
+            // Validate image data
             if let image = UIImage(data: data) {
                 ImageCache.shared.setImage(image, forKey: urlString)
                 return image
+            } else {
+                print("Invalid image data for URL: \(urlString)")
+                return nil
             }
         } catch {
-            print("Failed to load image: \(error)")
+            print("Failed to load image: \(error.localizedDescription)")
+            return nil
         }
-        
-        return nil
     }
 }
 

@@ -45,8 +45,13 @@ class PhotoListViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // Refresh favorites when returning from detail view
-        tableView.reloadData()
+        // Use performBatchUpdates for better animation performance
+        tableView.performBatchUpdates {
+            // Only reload the favorites section to avoid full table reload
+            if !FavoriteManager.shared.getFavorites().isEmpty {
+                tableView.reloadSections(IndexSet(integer: 0), with: .none)
+            }
+        }
     }
     
     @objc private func refreshData() {
@@ -108,8 +113,15 @@ extension PhotoListViewController: UITableViewDataSource {
         
         let photo: Photo
         if indexPath.section == 0 {
-            photo = FavoriteManager.shared.getFavorites()[indexPath.row]
+            let favorites = FavoriteManager.shared.getFavorites()
+            guard indexPath.row < favorites.count else {
+                return cell // Return empty cell if index out of bounds
+            }
+            photo = favorites[indexPath.row]
         } else {
+            guard indexPath.row < viewModel.photos.count else {
+                return cell // Return empty cell if index out of bounds
+            }
             photo = viewModel.photos[indexPath.row]
         }
         
@@ -125,8 +137,11 @@ extension PhotoListViewController: UITableViewDelegate {
         
         let selectedPhoto: Photo
         if indexPath.section == 0 {
-            selectedPhoto = FavoriteManager.shared.getFavorites()[indexPath.row]
+            let favorites = FavoriteManager.shared.getFavorites()
+            guard indexPath.row < favorites.count else { return }
+            selectedPhoto = favorites[indexPath.row]
         } else {
+            guard indexPath.row < viewModel.photos.count else { return }
             selectedPhoto = viewModel.photos[indexPath.row]
         }
         
@@ -164,6 +179,8 @@ class PhotoTableViewCell: UITableViewCell {
         return indicator
     }()
     
+    private var imageLoadTask: Task<Void, Never>?
+    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
@@ -194,13 +211,21 @@ class PhotoTableViewCell: UITableViewCell {
     }
     
     func configure(with photo: Photo) {
+        // Cancel previous task to prevent race conditions
+        imageLoadTask?.cancel()
+        
         titleLabel.text = photo.title
         photoImageView.image = nil
         activityIndicator.startAnimating()
         
-        Task {
+        imageLoadTask = Task {
             let image = await ImageCache.shared.loadImage(from: photo.url)
+            
+            // Check if task was cancelled
+            guard !Task.isCancelled else { return }
+            
             await MainActor.run {
+                guard !Task.isCancelled else { return }
                 activityIndicator.stopAnimating()
                 photoImageView.image = image ?? UIImage(systemName: "photo")
             }
@@ -209,6 +234,8 @@ class PhotoTableViewCell: UITableViewCell {
     
     override func prepareForReuse() {
         super.prepareForReuse()
+        imageLoadTask?.cancel()
+        imageLoadTask = nil
         photoImageView.image = nil
         titleLabel.text = nil
         activityIndicator.stopAnimating()

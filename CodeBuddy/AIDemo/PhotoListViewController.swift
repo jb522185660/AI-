@@ -18,8 +18,13 @@ class PhotoListViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        let oldCount = favoritePhotos.count
         loadFavoritePhotos()
-        tableView.reloadData()
+        
+        // 只在收藏数据变化时刷新表格
+        if favoritePhotos.count != oldCount {
+            tableView.reloadData()
+        }
     }
     
     private func loadFavoritePhotos() {
@@ -29,9 +34,12 @@ class PhotoListViewController: UIViewController {
         }
         
         do {
-            favoritePhotos = try JSONDecoder().decode([Photo].self, from: data)
+            let newFavorites = try JSONDecoder().decode([Photo].self, from: data)
+            favoritePhotos = newFavorites
         } catch {
             print("获取收藏失败: \(error)")
+            // 数据损坏时清空收藏
+            UserDefaults.standard.removeObject(forKey: favoritesKey)
             favoritePhotos = []
         }
     }
@@ -117,14 +125,24 @@ extension PhotoListViewController: UITableViewDataSource, UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        guard section >= 0 && section < 2 else { return 0 }
         return section == 0 ? favoritePhotos.count : viewModel.photos.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "PhotoCell", for: indexPath) as! PhotoCell
         
-        // 根据分区选择不同的数据源
-        let photo = indexPath.section == 0 ? favoritePhotos[indexPath.row] : viewModel.photos[indexPath.row]
+        // 安全地获取照片数据，防止数组越界
+        guard indexPath.section >= 0 && indexPath.section < 2 else {
+            return cell
+        }
+        
+        let photos = indexPath.section == 0 ? favoritePhotos : viewModel.photos
+        guard indexPath.row >= 0 && indexPath.row < photos.count else {
+            return cell
+        }
+        
+        let photo = photos[indexPath.row]
         cell.configure(with: photo, viewModel: viewModel)
         
         return cell
@@ -133,8 +151,17 @@ extension PhotoListViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         
-        // 根据分区选择不同的数据源
-        let photo = indexPath.section == 0 ? favoritePhotos[indexPath.row] : viewModel.photos[indexPath.row]
+        // 安全地获取照片数据，防止数组越界
+        guard indexPath.section >= 0 && indexPath.section < 2 else {
+            return
+        }
+        
+        let photos = indexPath.section == 0 ? favoritePhotos : viewModel.photos
+        guard indexPath.row >= 0 && indexPath.row < photos.count else {
+            return
+        }
+        
+        let photo = photos[indexPath.row]
         
         // 创建并跳转到详情页
         let detailVC = PhotoDetailViewController(photo: photo, viewModel: viewModel)

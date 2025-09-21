@@ -60,9 +60,14 @@ final class PhotoListViewController: UIViewController {
         viewModel.$photos
             .receive(on: DispatchQueue.main)
             .sink { [weak self] photos in
-                self?.allPhotos = photos
-                self?.updateFavoritePhotos()
-                self?.tableView.reloadData()
+                guard let self = self else { return }
+                self.allPhotos = photos
+                self.updateFavoritePhotos()
+                
+                // Only reload if view is visible
+                if self.isViewLoaded && self.view.window != nil {
+                    self.tableView.reloadData()
+                }
             }
             .store(in: &cancellables)
         
@@ -75,12 +80,18 @@ final class PhotoListViewController: UIViewController {
             }
             .store(in: &cancellables)
         
-        // Listen for favorite changes
+        // Listen for favorite changes with debounce
         NotificationCenter.default.publisher(for: .favoritesChanged)
             .receive(on: DispatchQueue.main)
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.updateFavoritePhotos()
-                self?.tableView.reloadData()
+                guard let self = self else { return }
+                self.updateFavoritePhotos()
+                
+                // Only reload if view is visible
+                if self.isViewLoaded && self.view.window != nil {
+                    self.tableView.reloadData()
+                }
             }
             .store(in: &cancellables)
     }
@@ -225,11 +236,25 @@ final class PhotoCell: UITableViewCell {
     
     func configure(with photo: Photo, viewModel: PhotoListViewModel) {
         titleLabel.text = photo.title
+        
+        // Cancel previous loading task if any
         photoImageView.image = nil
         
+        // Set placeholder or check cache first
+        if let cachedImage = ImageCache.shared.image(forKey: photo.url) {
+            photoImageView.image = cachedImage
+            return
+        }
+        
+        // Load image asynchronously
         Task {
-            if let image = await viewModel.loadImage(from: photo.url) {
-                photoImageView.image = image
+            let image = await viewModel.loadImage(from: photo.url)
+            
+            // Ensure we're still displaying the same photo
+            if self.titleLabel.text == photo.title {
+                await MainActor.run {
+                    self.photoImageView.image = image
+                }
             }
         }
     }
