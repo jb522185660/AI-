@@ -13,6 +13,7 @@ final class PhotoListViewModel: ObservableObject {
         self.networkService = networkService
     }
     
+    // TODO: 现在使用MOCK实现协议，也并没有真正的网络编码逻辑
     func loadPhotos() async {
         isLoading = true
         errorMessage = nil
@@ -64,6 +65,7 @@ final class PhotoListViewModel: ObservableObject {
     }
 }
 
+// TODO: 代码生成能力测试中，MVVM 抽象了NetworkServiceProtocol
 protocol NetworkServiceProtocol {
     func fetchPhotos() async throws -> [Photo]
 }

@@ -1,4 +1,6 @@
 import UIKit
+// TODO: 代码生成能力中，没有import Combine导致编译失败
+import Combine
 
 final class PhotoListViewController: UIViewController {
     
@@ -48,6 +50,7 @@ final class PhotoListViewController: UIViewController {
     }
     
     private func setupBindings() {
+        // TODO: 代码生成能力中，控制器通过Combine 绑定状态
         viewModel.$isLoading
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isLoading in
@@ -108,6 +111,7 @@ final class PhotoListViewController: UIViewController {
         }
     }
     
+    // TODO: 代码生成能力测试中，支持刷新、缓存与异步图片加载
     @objc private func refreshData() {
         Task {
             await viewModel.loadPhotos()
@@ -246,7 +250,7 @@ final class PhotoCell: UITableViewCell {
             return
         }
         
-        // Load image asynchronously
+        // TODO: 代码生成能力中实现异步加载
         Task {
             let image = await viewModel.loadImage(from: photo.url)
             
@@ -260,5 +264,4 @@ final class PhotoCell: UITableViewCell {
     }
 }
 
-// Combine framework import
-import Combine
+

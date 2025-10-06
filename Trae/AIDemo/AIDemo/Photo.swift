@@ -10,6 +10,7 @@ struct Photo: Codable, Identifiable {
     }
 }
 
+// TODO: 代码生成能力中，增加了PhotoResponse却没有使用
 struct PhotoResponse: Codable {
     let photos: [Photo]
     
