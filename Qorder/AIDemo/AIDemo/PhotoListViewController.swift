@@ -68,6 +68,7 @@ class PhotoListViewController: UIViewController {
 }
 
 // MARK: - PhotoListViewModelDelegate
+// TODO: 代码生成能力，无 Combine 依赖更利于直接编译运行
 extension PhotoListViewController: PhotoListViewModelDelegate {
     func viewModelDidUpdatePhotos(_ viewModel: PhotoListViewModel) {
         tableView.reloadData()

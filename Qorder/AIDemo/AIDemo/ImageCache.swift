@@ -3,6 +3,7 @@ import UIKit
 class ImageCache {
     static let shared = ImageCache()
     
+    // TODO: 代码生成能力，使用NSCache来做缓存
     private let cache = NSCache<NSString, UIImage>()
     private let urlSession: URLSession
     private var activeTasks = [String: Task<UIImage?, Never>]()

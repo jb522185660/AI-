@@ -18,6 +18,7 @@ class PhotoListViewModel {
         }
     }
     
+    // TODO: 代码生成能力测试中，列表数据使用 mock，未对https://example.com/photos 进行实际解码；
     func loadPhotos() async {
         isLoading = true
         errorMessage = nil
@@ -81,6 +82,7 @@ class PhotoListViewModel {
     */
 }
 
+// TODO: 代码生成能力，MVVM（delegate 通知）实现简洁
 protocol PhotoListViewModelDelegate: AnyObject {
     func viewModelDidUpdatePhotos(_ viewModel: PhotoListViewModel)
     func viewModelDidUpdateLoadingState(_ viewModel: PhotoListViewModel)
