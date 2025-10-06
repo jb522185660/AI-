@@ -16,6 +16,7 @@ class PhotoListViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupBindings()
+        // TODO: 性能优化 - 启用预取支持（UITableViewDataSourcePrefetching）
         loadData()
     }
     
@@ -173,6 +174,8 @@ extension PhotoListViewController: UITableViewDataSource, UITableViewDelegate {
         let detailVC = PhotoDetailViewController(photo: photo, viewModel: viewModel)
         navigationController?.pushViewController(detailVC, animated: true)
     }
+    
+    // TODO: 性能优化 - 实现预取协议（UITableViewDataSourcePrefetching）
 }
 
 // MARK: - 自定义单元格
