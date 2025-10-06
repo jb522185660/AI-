@@ -83,7 +83,7 @@ final class PhotoListViewController: UIViewController {
             }
             .store(in: &cancellables)
         
-        // Listen for favorite changes with debounce
+        // TODO: 上下文理解与持续开发中，通过通知.favoritesChanged 驱动列表分区刷新
         NotificationCenter.default.publisher(for: .favoritesChanged)
             .receive(on: DispatchQueue.main)
             .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
@@ -99,6 +99,7 @@ final class PhotoListViewController: UIViewController {
             .store(in: &cancellables)
     }
     
+    // TODO: 分区数据流清晰（allPhotos + 过滤收藏）
     private func updateFavoritePhotos() {
         favoritePhotos = allPhotos.filter { photo in
             FavoriteManager.shared.isFavorite(photo: photo)
@@ -136,7 +137,8 @@ extension PhotoListViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         guard let sectionType = Section(rawValue: section) else { return 0 }
-        
+        // TODO: 连续上下文中，收藏分区来源于当前列表过滤，无法展示不在当前数据集但已收藏的项（轻微限制）。没有及时刷新
+        // TODO: 需要刷新
         switch sectionType {
         case .favorites:
             return favoritePhotos.count

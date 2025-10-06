@@ -102,7 +102,7 @@ final class PhotoDetailViewController: UIViewController {
     
     private func loadImage() {
         activityIndicator.startAnimating()
-        
+        // TODO: 连续上下文中，延续原Combine 绑定方式，连续性最好。
         Task {
             if let image = await viewModel.loadImage(from: photo.url) {
                 await MainActor.run {
@@ -179,7 +179,7 @@ final class PhotoDetailViewController: UIViewController {
     }
 }
 
-// MARK: - Favorite Manager
+// TODO: 连续上下文中，通过FavoriteManager来管理收藏
 final class FavoriteManager {
     static let shared = FavoriteManager()
     
