@@ -27,6 +27,7 @@ final class PhotoListViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupBindings()
+        // TODO: 性能优化 - 启用预取支持（UITableViewDataSourcePrefetching）
         loadData()
     }
     
@@ -190,6 +191,23 @@ extension PhotoListViewController: UITableViewDataSource, UITableViewDelegate {
         let detailVC = PhotoDetailViewController(photo: photo, viewModel: viewModel)
         navigationController?.pushViewController(detailVC, animated: true)
     }
+    
+    // TODO: 性能优化 - 实现预取协议（UITableViewDataSourcePrefetching）
+    // extension PhotoListViewController: UITableViewDataSourcePrefetching {
+    //     func tableView(_ tableView: UITableView, prefetchRowsAt indexPaths: [IndexPath]) {
+    //         for indexPath in indexPaths {
+    //             guard let sectionType = Section(rawValue: indexPath.section) else { continue }
+    //             let photo: Photo
+    //             switch sectionType {
+    //             case .favorites:
+    //                 photo = favoritePhotos[indexPath.row]
+    //             case .allPhotos:
+    //                 photo = allPhotos[indexPath.row]
+    //             }
+    //             Task { await viewModel.loadImage(from: photo.url) }
+    //         }
+    //     }
+    // }
 }
 
 // MARK: - PhotoCell
@@ -252,7 +270,20 @@ final class PhotoCell: UITableViewCell {
             return
         }
         
-        // TODO: 代码生成能力中实现异步加载
+        // TODO: 性能优化 - 未做图片任务取消，快速滚动可能"错位图"或过度下载
+        // 优化方案：
+        // 1. 为 cell 持有 Task 引用并在 prepareForReuse 取消
+        // 代码示例：
+        // private var currentTask: Task<Void, Never>?
+        // currentTask?.cancel()
+        // currentTask = Task {
+        //     let image = await viewModel.loadImage(from: photo.url)
+        //     await MainActor.run {
+        //         if !Task.isCancelled && self.titleLabel.text == photo.title {
+        //             self.photoImageView.image = image
+        //         }
+        //     }
+        // }
         Task {
             let image = await viewModel.loadImage(from: photo.url)
             
