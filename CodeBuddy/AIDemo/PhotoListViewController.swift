@@ -1,4 +1,7 @@
 import UIKit
+// Combine 支持
+// TODO: 代码生成能力测试中，没有import Combine导致编译失败
+import Combine
 
 class PhotoListViewController: UIViewController {
     
@@ -18,6 +21,7 @@ class PhotoListViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        // TODO: 上下文理解与持续开发中，依赖 viewWillAppear 刷新收藏；未采用事件通知，响应略滞后。
         let oldCount = favoritePhotos.count
         loadFavoritePhotos()
         
@@ -63,6 +67,7 @@ class PhotoListViewController: UIViewController {
         tableView.refreshControl = refreshControl
     }
     
+    // TODO: 代码生成能力测试中， 使用 MVVM + Combine 绑定
     private func setupBindings() {
         viewModel.$photos
             .receive(on: DispatchQueue.main)
@@ -97,6 +102,7 @@ class PhotoListViewController: UIViewController {
         }
     }
     
+    // TODO: 代码生成能力测试中，下拉刷新与异步图片加载齐全
     @objc private func handleRefresh() {
         Task {
             await viewModel.refresh()
@@ -244,5 +250,3 @@ class PhotoCell: UITableViewCell {
     }
 }
 
-// Combine 支持
-import Combine

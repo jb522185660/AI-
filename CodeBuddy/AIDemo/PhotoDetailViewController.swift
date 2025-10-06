@@ -86,6 +86,7 @@ class PhotoDetailViewController: UIViewController {
         navigationItem.rightBarButtonItem = favoriteButton
     }
     
+    // TODO: 上下文理解与持续开发中，与原MVVM/Combine 代码风格一致；图片加载复用ViewModel，整体连贯
     private func loadImage() {
         Task {
             if let image = await viewModel.loadImage(for: photo) {

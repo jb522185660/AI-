@@ -13,6 +13,8 @@ class PhotoListViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
+        // TODO: 代码生成能力测试中，未实现对https://example.com/photos 的URLSession 解码。
+        
         do {
             // 使用模拟数据替代网络请求
             try await Task.sleep(nanoseconds: 1_000_000_000) // 模拟网络延迟

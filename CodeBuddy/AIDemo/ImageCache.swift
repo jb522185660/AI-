@@ -1,5 +1,6 @@
 import UIKit
 
+// TODO: 代码生成能力测试中ImageCache 采用 actor 去重并发下载
 actor ImageCache {
     static let shared = ImageCache()
     
